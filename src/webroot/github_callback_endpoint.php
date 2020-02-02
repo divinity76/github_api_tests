@@ -8,26 +8,71 @@ declare(strict_types = 1);
 // php-ified pre-computed sha1-hash: "\xe8\xe0\x02\x18\x92\xb4\xbf\x00\xed\x79\x19\x02\x64\xd2\x65\x4a\x23\x37\x58\xfc"
 const TOKEN_SHA1 = "\xe8\xe0\x02\x18\x92\xb4\xbf\x00\xed\x79\x19\x02\x64\xd2\x65\x4a\x23\x37\x58\xfc";
 header("Content-Type: text/plain;charset=UTF-8");
-auth();
-
-function auth(): void
-{
+$auth = function (): void {
     $user_string = (string) ($_GET['token'] ?? '');
     if (! hash_equals(TOKEN_SHA1, hash('sha1', $user_string, true))) {
         http_response_code(403);
         die("incorrect token.");
     }
+};
+$auth();
+ignore_user_abort(true);
+// disabled debug code
+// Debugstuff();
+$fp = fopen(__FILE__, 'rb');
+if (! $fp) {
+    throw new Exception('could not open self for flock');
+}
+if (! flock($fp, LOCK_EX | LOCK_NB)) {
+    throw new Exception('could not lock self!');
+}
+register_shutdown_function(function () use (&$fp) {
+    if (! flock($fp, LOCK_UN)) {
+        throw new Exception('failed to release flock');
+    }
+    fclose($fp);
+});
+if (! chdir(__DIR__ . "/../../")) {
+    throw new Exception('chdir failed.. wtf, am i not in  src/webroot ?');
+}
+// myexec ( "git reset --hard 2>&1" );
+
+// no submodules, dont need this: myexec ( 'git submodule update --init --recursive 2>&1' );
+// myexec ( "git pull --recurse-submodules=on-demand 2>&1" );
+myexec("git pull 2>&1");
+
+function myexec(string $str)
+{
+    $starttime = microtime(true);
+    echo 'executing: ';
+    var_dump($str);
+    flush();
+    $ret = 0;
+    passthru($str, $ret);
+    if ($ret !== 0) {
+        var_dump($ret);
+        var_dump('Error: this command failed: ', $str);
+        die();
+    }
+    $endtime = microtime(true);
+    echo ' time: ', number_format($endtime - $starttime, 17), "\n";
+    return;
 }
 
-ob_start();
-echo "getallheaders: ";
-var_dump(getallheaders());
-echo "php://input: ";
-var_dump(file_get_contents("php://input"));
-echo "_GET: ";
-var_dump($_GET);
-echo "_POST: ";
-var_dump($_POST);
-$str = ob_get_clean();
-echo $str;
-file_put_contents(((string) time()) . ".txt", $str);
+function Debugstuff()
+{
+    if (0) {
+        ob_start();
+        echo "getallheaders: ";
+        var_dump(getallheaders());
+        echo "php://input: ";
+        var_dump(file_get_contents("php://input"));
+        echo "_GET: ";
+        var_dump($_GET);
+        echo "_POST: ";
+        var_dump($_POST);
+        $str = ob_get_clean();
+        echo $str;
+        file_put_contents(((string) time()) . ".txt", $str);
+    }
+}
