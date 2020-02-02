@@ -32,8 +32,11 @@ register_shutdown_function(function () use (&$fp) {
     }
     fclose($fp);
 });
-if (! chdir(__DIR__ . "/../../")) {
-    throw new Exception('chdir failed.. wtf, am i not in  src/webroot ?');
+// don't need to be in root dir to run git pull :)
+if (0) {
+    if (! chdir(__DIR__ . "/../../")) {
+        throw new Exception('chdir failed.. wtf, am i not in  src/webroot ?');
+    }
 }
 // myexec ( "git reset --hard 2>&1" );
 
