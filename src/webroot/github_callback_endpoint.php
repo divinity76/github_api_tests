@@ -7,8 +7,17 @@ declare(strict_types = 1);
 // token urlencoded: 2803vTRrMSTIJya5eEynKoNg%2FWU%3D
 // php-ified pre-computed sha1-hash: "\xe8\xe0\x02\x18\x92\xb4\xbf\x00\xed\x79\x19\x02\x64\xd2\x65\x4a\x23\x37\x58\xfc"
 const TOKEN_SHA1 = "\xe8\xe0\x02\x18\x92\xb4\xbf\x00\xed\x79\x19\x02\x64\xd2\x65\x4a\x23\x37\x58\xfc";
-
 header("Content-Type: text/plain;charset=UTF-8");
+auth();
+
+function auth(): void
+{
+    $user_string = (string) ($_GET['token'] ?? '');
+    if (! hash_equals(TOKEN_SHA1, hash('sha1', $user_string, true))) {
+        http_response_code(403);
+        die("incorrect token.");
+    }
+}
 
 ob_start();
 echo "getallheaders: ";
